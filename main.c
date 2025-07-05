@@ -1,8 +1,8 @@
 
 #include <stdio.h> 
 
-#define DINGS_IMPL
-#include "dings.h"
+#define DRINGS_IMPL
+#include "drings.h"
 
 int main() {
     ds_String* string = ds_init_string("Hello World");

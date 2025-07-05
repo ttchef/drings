@@ -1,8 +1,8 @@
 
-#ifndef DINGS_H
-#define DINGS_H 
+#ifndef DRINGS_H
+#define DRINGS_H 
 
-#define DINGS_IMPL // Temp only for development
+#define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
 #include <stdio.h>
@@ -32,9 +32,9 @@ const char* ds_get_string_ptr(ds_String* string);
 }
 #endif
 
-#endif // DINGS_H
+#endif // DRINGS_H
 
-#ifdef DINGS_IMPL
+#ifdef DRINGS_IMPL
 
 ds_String* ds_init_string(const char *string) {
     size_t length = strlen(string);
