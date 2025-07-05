@@ -2,6 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
+#include <cstdlib>
 #define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
@@ -54,10 +55,12 @@ typedef struct {
 // allocater support
 typedef void* (*ds_malloc_fn)(size_t size);
 typedef void (*ds_free_fn)(void* ptr);
+typedef void* (*ds_realloc_fn)(void* ptr, size_t new_size);
 
 typedef struct {
     ds_malloc_fn malloc;
     ds_free_fn free;
+    ds_realloc_fn realloc;
 } ds_Allocator;
 
 #ifdef DS_EMBEDDED
@@ -65,7 +68,8 @@ typedef struct {
 #else 
     static ds_Allocator host_allocator = {
         .malloc = malloc,
-        .free = free
+        .free = free,
+        .realloc = realloc
     };
 
     static ds_Allocator* DS_DEFAULT_ALLOCATOR = &host_allocator;
