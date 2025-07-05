@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-#define DRINGS_IMPL // Temp only for development
+//#define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
 #include <stdio.h>
@@ -32,6 +32,7 @@ const char* ds_get_string_ptr(ds_String* string);
 // methods
 void ds_append(ds_String* string, const char* literal);
 void ds_set(ds_String* string, const char* literal);
+ds_String* ds_clone(ds_String* string);
 
 // helper functions
 static inline uint32_t ds_length(ds_String* string) {
@@ -163,6 +164,31 @@ void ds_append(ds_String* string, const char* literal) {
             string->length = new_length;
         }
     }
+}
+
+ds_String* ds_clone(ds_String* string) {
+    ds_String* str = (ds_String*)malloc(sizeof(ds_String));
+    if (!str) {
+        fprintf(stderr, "[ERROR] Couldnt allocate cloning string in ds_clone function\n");
+        return NULL;
+    }
+
+    if (string->is_heap && string->heap_data) {
+        str->heap_data = (char*)malloc(string->length + 1);   
+        if (!str->heap_data) {
+            fprintf(stderr, "[ERROR] Couldnt allocate heap data for cloned string in ds_clone function\n");
+            return NULL;
+        }
+        memcpy(str->heap_data, string->heap_data, string->length + 1);
+        str->is_heap = true;
+    }
+    else {
+        memcpy(str->stack_data, string->stack_data, string->length + 1);
+        str->is_heap = false;
+    }
+    str->length = string->length;
+
+    return str;
 }
 
 #endif

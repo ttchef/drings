@@ -13,15 +13,19 @@ A simple dynamic string libary for c
 #include "drings.h"
 
 int main() {
-    ds_String* string = ds_init_string("Hello ");
-        
-    ds_append(string, "you are a nice persoon");
-    printf("%s\n", ds_get_string_ptr(string));
+    ds_String* string1 = ds_init_string("Hello ");
+    ds_append(string1, "World");
 
-    ds_set(string, "Hello");
-    printf("%s\n", ds_get_string_ptr(string));
+    printf("%s\n", ds_get_string_ptr(string1));
 
-    ds_free_string(string);
+    ds_set(string1, "Hello World Guys love you");
+    printf("%s\n", ds_get_string_ptr(string1));
+
+    ds_String* string2 = ds_clone(string1);
+    printf("%s\n", ds_get_string_ptr(string2));
+
+    ds_free_string(string1);
+    ds_free_string(string2);
     return 0;
 }
 ```
