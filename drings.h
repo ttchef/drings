@@ -2,17 +2,15 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-#include <cstdlib>
 #define DRINGS_IMPL // Temp only for development
+                    //
 #define DS_SMALL_STRING_CAPACITY 15
 
-#ifndef DS_EMBEDDED
-    #include <stdio.h>
-    #include <string.h> 
-    #include <stdlib.h> 
-    #include <stdint.h>
-    #include <stdbool.h>
-#endif
+#include <stdio.h>
+#include <string.h> 
+#include <stdlib.h> 
+#include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,43 +50,9 @@ typedef struct {
     uint32_t length;
 } ds_MutableStringView;
 
-// allocater support
-typedef void* (*ds_malloc_fn)(size_t size);
-typedef void (*ds_free_fn)(void* ptr);
-typedef void* (*ds_realloc_fn)(void* ptr, size_t new_size);
-
-typedef struct {
-    ds_malloc_fn malloc;
-    ds_free_fn free;
-    ds_realloc_fn realloc;
-} ds_Allocator;
-
-#ifdef DS_EMBEDDED
-    extern ds_Allocator* DS_DEFAULT_ALLOCATOR;
-#else 
-    static ds_Allocator host_allocator = {
-        .malloc = malloc,
-        .free = free,
-        .realloc = realloc
-    };
-
-    static ds_Allocator* DS_DEFAULT_ALLOCATOR = &host_allocator;
-#endif
-
-static inline void* ds_malloc(size_t size) {
-    return DS_DEFAULT_ALLOCATOR->malloc(size);
-}
-
-static inline void ds_free(void* ptr) {
-    DS_DEFAULT_ALLOCATOR->free(ptr);
-}
-
 // construct
 ds_String* ds_init_string(const char* string);
-ds_String* ds_init_string_eb(ds_Allocator* alloc, const char* string);
-
 void ds_free_string(ds_String* string);
-void ds_free_string_eb(ds_Allocator* alloc, ds_String* string);
 
 // methods
 
