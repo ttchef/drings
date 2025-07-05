@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-#define DRINGS_IMPL // Temp only for development
+//#define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
 #include <stdio.h>
@@ -30,7 +30,8 @@ void ds_free_string(ds_String* string);
 const char* ds_get_string_ptr(ds_String* string);
 
 // methods
-void ds_append(const char* literal, ds_String* string);
+void ds_append(ds_String* string, const char* literal);
+void ds_set(ds_String* string, const char* literal);
 
 #ifdef __cplusplus
 }
@@ -83,7 +84,44 @@ const char* ds_get_string_ptr(ds_String* string) {
     return string->stack_data;
 }
 
-void ds_append(const char* literal, ds_String *string) {
+void ds_set(ds_String* string, const char* literal) {
+    size_t lit_length = strlen(literal);
+    
+    if (lit_length <= DS_SMALL_STRING_CAPACITY) {
+        // free heap if there
+        if (string->is_heap && string->heap_data) {
+            string->is_heap = false;
+            free(string->heap_data);
+            string->heap_data = NULL;
+        }
+        memcpy(string->stack_data, literal, lit_length + 1);
+        string->length = lit_length;
+    }
+    else {
+        if (!string->is_heap) {
+            string->heap_data = (char*)malloc(lit_length + 1);
+            if (!string->heap_data) {
+                fprintf(stderr, "[ERROR] Couldnt allocate string: %s to the heap with literal: %s from ds_set\n",
+                        string->stack_data, literal);
+                return;
+            }
+            string->is_heap = true;
+        }
+        else {
+            char* heap_buffer = (char*)realloc(string->heap_data, lit_length + 1);
+            if (!heap_buffer) {
+                fprintf(stderr, "[ERROR] Couldnt reallocate string: %s on the heap while trying to set it to: %s in the ds_set call\n",
+                        string->heap_data, literal);
+                return;
+            }
+            string->heap_data = heap_buffer;
+        }
+        memcpy(string->heap_data, literal, lit_length + 1);
+        string->length = lit_length;
+    }
+}
+
+void ds_append(ds_String* string, const char* literal) {
     size_t lit_length = strlen(literal);
     size_t new_length = string->length + lit_length;
 
