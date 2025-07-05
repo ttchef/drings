@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-//#define DRINGS_IMPL // Temp only for development
+#define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
 #include <stdio.h>
@@ -32,6 +32,15 @@ const char* ds_get_string_ptr(ds_String* string);
 // methods
 void ds_append(ds_String* string, const char* literal);
 void ds_set(ds_String* string, const char* literal);
+
+// helper functions
+static inline uint32_t ds_length(ds_String* string) {
+    return string->length;
+}
+
+static inline bool ds_is_heap(ds_String* string) {
+    return string->is_heap;
+}
 
 #ifdef __cplusplus
 }
