@@ -24,9 +24,13 @@ typedef struct {
     };
 } ds_String;
 
+// overall
 ds_String* ds_init_string(const char* string);
 void ds_free_string(ds_String* string);
 const char* ds_get_string_ptr(ds_String* string);
+
+// methods
+void ds_append(const char* literal, ds_String* string);
 
 #ifdef __cplusplus
 }
@@ -77,6 +81,41 @@ const char* ds_get_string_ptr(ds_String* string) {
         return string->heap_data;
     }
     return string->stack_data;
+}
+
+void ds_append(const char* literal, ds_String *string) {
+    size_t lit_length = strlen(literal);
+    size_t new_length = string->length + lit_length;
+
+    if (string->is_heap && string->heap_data) {
+        char* new_heap_data = (char*)realloc(string->heap_data, new_length + 1);
+        if (!new_heap_data) {
+            fprintf(stderr, "[ERROR] Couldnt reallocate string: %s when appending literal: %s\n", string->heap_data, literal);
+            return;
+        }
+        string->heap_data = new_heap_data;
+        memcpy(string->heap_data + string->length, literal, lit_length + 1);
+        string->length = new_length;
+    } 
+
+    else {
+        if (new_length <= DS_SMALL_STRING_CAPACITY) {
+            memcpy(string->stack_data + string->length, literal, lit_length + 1);
+            string->length = new_length;
+        }
+        else {
+            string->is_heap = true;
+            char* heap_buffer = (char*)malloc(new_length + 1);
+            if (!heap_buffer) {
+                fprintf(stderr, "[ERROR] Couldnt allocated heap data for string: %s while appending: %s\n", string->stack_data, literal);
+                return;
+            }
+            memcpy(heap_buffer, string->stack_data, string->length);
+            memcpy(heap_buffer + string->length, literal, lit_length + 1);
+            string->heap_data = heap_buffer;
+            string->length = new_length;
+        }
+    }
 }
 
 #endif
