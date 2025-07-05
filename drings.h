@@ -5,44 +5,111 @@
 #define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
-#include <stdio.h>
-#include <string.h> 
-#include <stdlib.h> 
-#include <stdint.h>
-#include <stdbool.h>
+#ifndef DS_EMDEDDED
+    #include <stdio.h>
+    #include <string.h> 
+    #include <stdlib.h> 
+    #include <stdint.h>
+    #include <stdbool.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef enum {
+    DS_OK = 0,
+    DS_ERROR = -1,
+    DS_ALLOC_FAIL = -2,
+    DS_OUT_OF_BOUNDS = -3,
+} DS_RESULT;
+
+typedef enum {
+    DS_IS_HEAP = 0x1,
+    DS_IS_STACK = 0x2,
+    DS_OWNS_MEM = 0x4,
+    DS_READ_ONLY = 0x8,
+} DS_FLAG;
+
 typedef struct {
     uint32_t length;
-    bool is_heap;
+    uint32_t capacity;
+    uint32_t flags;
     union {
         char stack_data[DS_SMALL_STRING_CAPACITY + 1]; 
         char* heap_data;
     };
 } ds_String;
 
-// overall
+typedef struct {
+    const char* data;
+    uint32_t length;
+} ds_StringView;
+
+typedef struct {
+    char* data;
+    uint32_t length;
+} ds_MutableStringView;
+
+// allocater support
+typedef void* (*ds_malloc_fn)(size_t size);
+typedef void (*ds_free_fn)(void* ptr);
+
+typedef struct {
+    ds_malloc_fn malloc;
+    ds_free_fn free;
+} ds_Allocator;
+
+#ifdef DS_EMDEDDED
+    extern ds_Allocator* DS_DEDS_DEFAULT_ALLOCATOR;
+#else 
+    static ds_Allocator host_allocator = {
+        .malloc = malloc,
+        .free = free
+    };
+
+    static ds_Allocator* DS_DEFAULT_ALLOCATOR = &host_allocator;
+#endif
+
+static const ds_Allocator ds_embedded_allocator = {};
+
+static inline void* ds_malloc(size_t size) {
+    return DS_DEFAULT_ALLOCATOR->malloc(size);
+}
+
+static inline void ds_free(void* ptr) {
+    DS_DEFAULT_ALLOCATOR->free(ptr);
+}
+
+// construct
 ds_String* ds_init_string(const char* string);
+ds_String* ds_init_string_eb(ds_Allocator* alloc, const char* string);
+
 void ds_free_string(ds_String* string);
-const char* ds_get_string_ptr(ds_String* string);
+void ds_free_string_eb(ds_Allocator* alloc, ds_String* string);
 
 // methods
-void ds_append(ds_String* string, const char* literal);
-char ds_pop(ds_String* string);
-void ds_set(ds_String* string, const char* literal);
-ds_String* ds_clone(ds_String* string);
 
-// helper functions
-static inline uint32_t ds_length(ds_String* string) {
-    return string->length;
+// helper
+static inline bool ds_is_heap(const ds_String* string) {
+    return (string->flags & DS_IS_HEAP) != 0;
 }
 
-static inline bool ds_is_heap(ds_String* string) {
-    return string->is_heap;
+static inline bool ds_is_stack(const ds_String* string) {
+    return (string->flags & DS_IS_STACK) != 0;
 }
+
+static inline bool ds_is_empty(const ds_String* string) {
+    return string->length == 0;
+}
+
+static inline char* ds_data(ds_String* string) {
+    return ds_is_heap(string) ? string->heap_data : string->stack_data;
+}
+
+// private
+
+
 
 #ifdef __cplusplus
 }
@@ -52,176 +119,7 @@ static inline bool ds_is_heap(ds_String* string) {
 
 #ifdef DRINGS_IMPL
 
-ds_String* ds_init_string(const char *string) {
-    size_t length = strlen(string);
-    ds_String* str = (ds_String*)malloc(sizeof(ds_String));
-    if (!str) {
-        fprintf(stderr, "[ERROR] Couldnt allocate enough memory for string: %s\n", string);
-        return NULL;
-    }
 
-    str->length = length;
-
-    if (length <= DS_SMALL_STRING_CAPACITY) {
-        str->is_heap = false;
-        memcpy(str->stack_data, string, length + 1);
-    }
-    else {
-        str->is_heap = true;
-        str->heap_data = (char*)malloc(length + 1);
-        if (!str->heap_data) {
-            fprintf(stderr, "[ERROR] Couldnt allocate heap data for string: %s\n", string);
-            free(str);
-            return NULL;
-        }
-        memcpy(str->heap_data, string, length + 1);
-    }
-    
-
-    return str;
-}
-
-void ds_free_string(ds_String *string) {
-    if (string->is_heap && string->heap_data) {
-        free(string->heap_data);
-    }
-    free(string);
-}
-
-const char* ds_get_string_ptr(ds_String* string) {
-    if (string->is_heap && string->heap_data) {
-        return string->heap_data;
-    }
-    return string->stack_data;
-}
-
-void ds_set(ds_String* string, const char* literal) {
-    size_t lit_length = strlen(literal);
-    
-    if (lit_length <= DS_SMALL_STRING_CAPACITY) {
-        // free heap if there
-        if (string->is_heap && string->heap_data) {
-            string->is_heap = false;
-            free(string->heap_data);
-            string->heap_data = NULL;
-        }
-        memcpy(string->stack_data, literal, lit_length + 1);
-        string->length = lit_length;
-    }
-    else {
-        if (!string->is_heap) {
-            string->heap_data = (char*)malloc(lit_length + 1);
-            if (!string->heap_data) {
-                fprintf(stderr, "[ERROR] Couldnt allocate string: %s to the heap with literal: %s from ds_set\n",
-                        string->stack_data, literal);
-                return;
-            }
-            string->is_heap = true;
-        }
-        else {
-            char* heap_buffer = (char*)realloc(string->heap_data, lit_length + 1);
-            if (!heap_buffer) {
-                fprintf(stderr, "[ERROR] Couldnt reallocate string: %s on the heap while trying to set it to: %s in the ds_set call\n",
-                        string->heap_data, literal);
-                return;
-            }
-            string->heap_data = heap_buffer;
-        }
-        memcpy(string->heap_data, literal, lit_length + 1);
-        string->length = lit_length;
-    }
-}
-
-void ds_append(ds_String* string, const char* literal) {
-    size_t lit_length = strlen(literal);
-    size_t new_length = string->length + lit_length;
-
-    if (string->is_heap && string->heap_data) {
-        char* new_heap_data = (char*)realloc(string->heap_data, new_length + 1);
-        if (!new_heap_data) {
-            fprintf(stderr, "[ERROR] Couldnt reallocate string: %s when appending literal: %s\n", string->heap_data, literal);
-            return;
-        }
-        string->heap_data = new_heap_data;
-        memcpy(string->heap_data + string->length, literal, lit_length + 1);
-        string->length = new_length;
-    } 
-
-    else {
-        if (new_length <= DS_SMALL_STRING_CAPACITY) {
-            memcpy(string->stack_data + string->length, literal, lit_length + 1);
-            string->length = new_length;
-        }
-        else {
-            string->is_heap = true;
-            char* heap_buffer = (char*)malloc(new_length + 1);
-            if (!heap_buffer) {
-                fprintf(stderr, "[ERROR] Couldnt allocated heap data for string: %s while appending: %s\n", string->stack_data, literal);
-                return;
-            }
-            memcpy(heap_buffer, string->stack_data, string->length);
-            memcpy(heap_buffer + string->length, literal, lit_length + 1);
-            string->heap_data = heap_buffer;
-            string->length = new_length;
-        }
-    }
-}
-
-char ds_pop(ds_String* string) {
-    if (!(string->length > 1)) {
-        fprintf(stderr, "[ERROR] String isnt big enough to pop an element!\n");
-        return 0;
-    } 
-
-    char last_char;
-    uint32_t new_length = string->length - 1;
-    if (string->is_heap) {
-        last_char = string->heap_data[new_length];
-
-        if (new_length <= DS_SMALL_STRING_CAPACITY) {
-            string->is_heap = false;
-            memcpy(string->stack_data, string->heap_data, new_length);
-            free(string->heap_data);
-            string->heap_data = NULL;
-            string->stack_data[new_length] = '\0';
-        }
-        else {
-            string->heap_data[new_length] = '\0';
-        }
-    }
-    else {
-        last_char = string->stack_data[string->length - 1];
-        string->stack_data[new_length] = '\0';
-    }
-    string->length = new_length;
-
-    return last_char;
-}
-
-ds_String* ds_clone(ds_String* string) {
-    ds_String* str = (ds_String*)malloc(sizeof(ds_String));
-    if (!str) {
-        fprintf(stderr, "[ERROR] Couldnt allocate cloning string in ds_clone function\n");
-        return NULL;
-    }
-
-    if (string->is_heap && string->heap_data) {
-        str->heap_data = (char*)malloc(string->length + 1);   
-        if (!str->heap_data) {
-            fprintf(stderr, "[ERROR] Couldnt allocate heap data for cloned string in ds_clone function\n");
-            return NULL;
-        }
-        memcpy(str->heap_data, string->heap_data, string->length + 1);
-        str->is_heap = true;
-    }
-    else {
-        memcpy(str->stack_data, string->stack_data, string->length + 1);
-        str->is_heap = false;
-    }
-    str->length = string->length;
-
-    return str;
-}
 
 #endif
 

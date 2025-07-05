@@ -5,6 +5,8 @@
 #include "drings.h"
 
 int main() {
+
+    /*
     ds_String* string1 = ds_init_string("Hello ");
     ds_append(string1, "World");
 
@@ -22,8 +24,18 @@ int main() {
     c = ds_pop(string3);
     printf("Char: %c String: %s\n", c, ds_get_string_ptr(string3));
 
+    // reserve
+    ds_reserve(string1, 100);
+    for (int i = 0; i < 100; i++) {
+        ds_append(string1, "Abc");
+    }
+    printf("%s\n", ds_get_string_ptr(string1));
+
     ds_free_string(string1);
     ds_free_string(string2);
+    ds_free_string(string3);
+
+    */
     return 0;
 }
 
