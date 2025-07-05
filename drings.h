@@ -5,7 +5,7 @@
 #define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
-#ifndef DS_EMDEDDED
+#ifndef DS_EMBEDDED
     #include <stdio.h>
     #include <string.h> 
     #include <stdlib.h> 
@@ -60,8 +60,8 @@ typedef struct {
     ds_free_fn free;
 } ds_Allocator;
 
-#ifdef DS_EMDEDDED
-    extern ds_Allocator* DS_DEDS_DEFAULT_ALLOCATOR;
+#ifdef DS_EMBEDDED
+    extern ds_Allocator* DS_DEFAULT_ALLOCATOR;
 #else 
     static ds_Allocator host_allocator = {
         .malloc = malloc,
@@ -70,8 +70,6 @@ typedef struct {
 
     static ds_Allocator* DS_DEFAULT_ALLOCATOR = &host_allocator;
 #endif
-
-static const ds_Allocator ds_embedded_allocator = {};
 
 static inline void* ds_malloc(size_t size) {
     return DS_DEFAULT_ALLOCATOR->malloc(size);
