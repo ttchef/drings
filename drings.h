@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-//#define DRINGS_IMPL // Temp only for development
+#define DRINGS_IMPL // Temp only for development
 #define DS_SMALL_STRING_CAPACITY 15
 
 #include <stdio.h>
@@ -31,6 +31,7 @@ const char* ds_get_string_ptr(ds_String* string);
 
 // methods
 void ds_append(ds_String* string, const char* literal);
+char ds_pop(ds_String* string);
 void ds_set(ds_String* string, const char* literal);
 ds_String* ds_clone(ds_String* string);
 
@@ -164,6 +165,37 @@ void ds_append(ds_String* string, const char* literal) {
             string->length = new_length;
         }
     }
+}
+
+char ds_pop(ds_String* string) {
+    if (!(string->length > 1)) {
+        fprintf(stderr, "[ERROR] String isnt big enough to pop an element!\n");
+        return 0;
+    } 
+
+    char last_char;
+    uint32_t new_length = string->length - 1;
+    if (string->is_heap) {
+        last_char = string->heap_data[new_length];
+
+        if (new_length <= DS_SMALL_STRING_CAPACITY) {
+            string->is_heap = false;
+            memcpy(string->stack_data, string->heap_data, new_length);
+            free(string->heap_data);
+            string->heap_data = NULL;
+            string->stack_data[new_length] = '\0';
+        }
+        else {
+            string->heap_data[new_length] = '\0';
+        }
+    }
+    else {
+        last_char = string->stack_data[string->length - 1];
+        string->stack_data[new_length] = '\0';
+    }
+    string->length = new_length;
+
+    return last_char;
 }
 
 ds_String* ds_clone(ds_String* string) {
