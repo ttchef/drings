@@ -5,6 +5,7 @@
 #define DRINGS_IMPL // Temp only for development
                     //
 #define DS_SMALL_STRING_CAPACITY 15
+#define DS_STACK_CAPACITY 0
 
 #include <stdio.h>
 #include <string.h> 
@@ -27,9 +28,8 @@ typedef enum {
 
 typedef enum {
     DS_IS_HEAP = 0x1,
-    DS_IS_STACK = 0x2,
-    DS_OWNS_MEM = 0x4,
-    DS_READ_ONLY = 0x8,
+    DS_OWNS_MEM = 0x2,
+    DS_READ_ONLY = 0x4,
 } DS_FLAG;
 
 typedef struct {
@@ -65,6 +65,7 @@ ds_String* ds_init_string(const char* string);
 void ds_free_string(ds_String* string);
 
 // methods
+const char* ds_to_c_str(ds_String* string);
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
@@ -72,7 +73,7 @@ static inline bool ds_is_heap(const ds_String* string) {
 }
 
 static inline bool ds_is_stack(const ds_String* string) {
-    return (string->flags & DS_IS_STACK) != 0;
+    return (string->flags & DS_IS_HEAP) == 0;
 }
 
 static inline bool ds_is_empty(const ds_String* string) {
@@ -82,6 +83,19 @@ static inline bool ds_is_empty(const ds_String* string) {
 static inline char* ds_data(ds_String* string) {
     return ds_is_heap(string) ? string->heap_data : string->stack_data;
 }
+
+static inline void ds_set_is_heap(ds_String* string) {
+    string->flags |= DS_IS_HEAP;
+}
+
+static inline void ds_set_is_stack(ds_String* string) {
+    string->flags &= ~DS_IS_HEAP;
+}
+
+static inline bool ds_has_valid_heap_data(const ds_String* string) {
+    return (ds_is_heap(string) && string->heap_data);
+}
+
 
 // Erroc management
 static ds_ErrorInfo ds_last_error = {0};
@@ -168,9 +182,52 @@ ds_String* ds_init_string(const char* literal) {
         DS_SET_ERROR(DS_INVALID_INPUT, "Input String in NULL");
         return NULL;
     }
+
+    ds_String* string = (ds_String*)malloc(sizeof(ds_String));
+    if (!string) {
+        DS_SET_ERROR(DS_ALLOC_FAIL, "Allocation from string failed");
+        return NULL;
+    }
+    
+    size_t lit_length = strlen(literal);
+    
+    // small enoguh for stack?
+    if (lit_length <= DS_SMALL_STRING_CAPACITY) {
+        memcpy(string->stack_data, literal, lit_length + 1);
+        string->length = lit_length;
+        string->capacity = DS_STACK_CAPACITY;
+        ds_set_is_stack(string);
+    }
+    // on the heap
+    else {
+        string->heap_data = (char*)malloc(lit_length + 1);
+        memcpy(string->heap_data, literal, lit_length + 1);
+        string->length = lit_length;
+        string->capacity = lit_length + 1;
+        ds_set_is_heap(string);
+    }
+
+    return string;
 }
 
+void ds_free_string(ds_String* string)  {
+    if (ds_is_heap(string)) {
+        free(string->heap_data);
+        string->heap_data = NULL;
+    }
+    free(string);
+    string = NULL;
+}
 
+const char* ds_to_c_str(ds_String* string) {
+   
+    if (ds_has_valid_heap_data(string)) {
+        return string->heap_data;
+    }
+    else {
+        return string->stack_data;
+    }
+}
 
 #endif
 
