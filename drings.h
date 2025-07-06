@@ -375,16 +375,17 @@ char ds_pop(ds_String* string) {
     }
     else if (ds_has_valid_heap_data(string)) {
         c = string->heap_data[string->length - 1];
-        string->length--;
 
         if (string->length <= DS_SMALL_STRING_CAPACITY) {
             char* heap_buffer = string->heap_data;
             memcpy(string->stack_data, heap_buffer, string->length);
-            string->stack_data[string->length + 1] = '\0';
+            string->stack_data[string->length - 1] = '\0';
         }
         else {
-            string->heap_data[string->length + 1] = '\0';
+            string->heap_data[string->length - 1] = '\0';
         }
+
+        string->length--;
     }
 
     return c;
