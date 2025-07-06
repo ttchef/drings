@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 typedef enum {
+    DS_UNDEFINIED = 1,
     DS_OK = 0,
     DS_ERROR = -1,
     DS_ALLOC_FAIL = -2,
@@ -55,7 +56,7 @@ typedef struct {
     const char* function_name;
     const char* file_name;
     int line_number;
-    void* context_data;
+    char message[256];
 } ds_ErrorInfo;
 
 // construct
@@ -85,8 +86,10 @@ static inline char* ds_data(ds_String* string) {
 static ds_ErrorInfo ds_last_error = {0};
 static bool ds_error_login_enabled = true;
 
+void ds_default_error_callback(const ds_ErrorInfo* error);
+
 typedef void (*ds_ErrorCallback)(const ds_ErrorInfo* error);
-static ds_ErrorCallback ds_error_callback = NULL;
+static ds_ErrorCallback ds_error_callback = ds_default_error_callback;
 
 #define DS_SET_ERROR(code, msg, ...) \
     do { \
@@ -127,17 +130,36 @@ void ds_enable_error_loggin(bool enabled) {
 }
 
 const ds_ErrorInfo* ds_get_last_error() {
-
+    return &ds_last_error;
 }
 
 void ds_clear_last_error() {
-
+    ds_last_error.error_code = DS_UNDEFINIED;
+    ds_last_error.file_name = 0;
+    ds_last_error.function_name = 0;
+    ds_last_error.line_number = 0;
 }
 
 const char* ds_error_string(DS_RESULT result) {
-
+    switch (result) {
+        case DS_UNDEFINIED:     return "Undefinied";
+        case DS_OK:             return "Success";
+        case DS_ERROR:          return "General Error";
+        case DS_ALLOC_FAIL:     return "Memory allocation failed";
+        case DS_OUT_OF_BOUNDS:  return "Index out of bounds";
+        default:                return "Unkown Error";
+    }
 }
 
+void ds_default_error_callback(const ds_ErrorInfo *error) {
+    printf("Error in %s:%d (%s): %s - %s\n",
+            error->file_name,
+            error->line_number,
+            error->function_name,
+            ds_error_string(error->error_code),
+            error->message
+            );
+}
 
 #endif
 
