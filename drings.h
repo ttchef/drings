@@ -22,6 +22,7 @@ typedef enum {
     DS_ERROR = -1,
     DS_ALLOC_FAIL = -2,
     DS_OUT_OF_BOUNDS = -3,
+    DS_INVALID_INPUT = -4,
 } DS_RESULT;
 
 typedef enum {
@@ -147,6 +148,7 @@ const char* ds_error_string(DS_RESULT result) {
         case DS_ERROR:          return "General Error";
         case DS_ALLOC_FAIL:     return "Memory allocation failed";
         case DS_OUT_OF_BOUNDS:  return "Index out of bounds";
+        case DS_INVALID_INPUT:  return "Invalid function input";
         default:                return "Unkown Error";
     }
 }
@@ -160,6 +162,15 @@ void ds_default_error_callback(const ds_ErrorInfo *error) {
             error->message
             );
 }
+
+ds_String* ds_init_string(const char* literal) {
+    if (!literal) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input String in NULL");
+        return NULL;
+    }
+}
+
+
 
 #endif
 

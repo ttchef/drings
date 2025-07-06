@@ -6,6 +6,8 @@
 
 int main() {
 
+    ds_String* string1 = ds_init_string(NULL);
+
     /*
     ds_String* string1 = ds_init_string("Hello ");
     ds_append(string1, "World");
