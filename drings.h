@@ -50,6 +50,14 @@ typedef struct {
     uint32_t length;
 } ds_MutableStringView;
 
+typedef struct {
+    DS_RESULT error_code;
+    const char* function_name;
+    const char* file_name;
+    int line_number;
+    void* context_data;
+} ds_ErrorInfo;
+
 // construct
 ds_String* ds_init_string(const char* string);
 void ds_free_string(ds_String* string);
@@ -73,6 +81,31 @@ static inline char* ds_data(ds_String* string) {
     return ds_is_heap(string) ? string->heap_data : string->stack_data;
 }
 
+// Erroc management
+static ds_ErrorInfo ds_last_error = {0};
+static bool ds_error_login_enabled = true;
+
+typedef void (*ds_ErrorCallback)(const ds_ErrorInfo* error);
+static ds_ErrorCallback ds_error_callback = NULL;
+
+#define DS_SET_ERROR(code, msg, ...) \
+    do { \
+        if (ds_error_login_enabled) { \
+            ds_last_error.error_code = code; \
+            ds_last_error.function_name = __func__; \
+            ds_last_error.file_name = __FILE__; \
+            ds_last_error.line_number = __LINE__; \
+            snprintf(ds_last_error.message, sizeof(ds_last_error.message), msg, ##__VA_ARGS__); \
+            if (ds_error_callback) ds_error_callback(&ds_last_error); \
+        } \
+    } while(0)
+
+void ds_set_error_callback(ds_ErrorCallback callback);
+void ds_enable_error_loggin(bool enabled);
+const ds_ErrorInfo* ds_get_last_error();
+void ds_clear_last_error();
+const char* ds_error_string(DS_RESULT result);
+
 // private
 
 
@@ -85,6 +118,25 @@ static inline char* ds_data(ds_String* string) {
 
 #ifdef DRINGS_IMPL
 
+void ds_set_error_callback(ds_ErrorCallback callback) {
+    if (callback) ds_error_callback = callback;
+}
+
+void ds_enable_error_loggin(bool enabled) {
+    ds_error_login_enabled = enabled;
+}
+
+const ds_ErrorInfo* ds_get_last_error() {
+
+}
+
+void ds_clear_last_error() {
+
+}
+
+const char* ds_error_string(DS_RESULT result) {
+
+}
 
 
 #endif
