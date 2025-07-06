@@ -24,12 +24,14 @@ typedef enum {
     DS_ALLOC_FAIL = -2,
     DS_OUT_OF_BOUNDS = -3,
     DS_INVALID_INPUT = -4,
+    DS_INVALID_LENGTH = -5,
 } DS_RESULT;
 
 typedef enum {
     DS_IS_HEAP = 0x1,
     DS_OWNS_MEM = 0x2,
     DS_READ_ONLY = 0x4,
+    DS_STICKY_HEAP = 0x8,
 } DS_FLAG;
 
 typedef struct {
@@ -61,16 +63,19 @@ typedef struct {
 } ds_ErrorInfo;
 
 // construct
-ds_String* ds_init_string(const char* string);
-void ds_free_string(ds_String* string);
+ds_String*      ds_init_string(const char* string);
+void            ds_free_string(ds_String* string);
 
 // methods
-const char* ds_to_c_str(ds_String* string);
-void ds_append(ds_String* string, const char* literal);
-void ds_append_dstring(ds_String* string, ds_String* append);
-void ds_append_char(ds_String* string, char c);
+void            ds_set(ds_String* string, const char* literal);
+void            ds_clone(ds_String* string, ds_String* clone);
+const char*     ds_to_c_str(ds_String* string);
+void            ds_append(ds_String* string, const char* literal);
+void            ds_append_dstring(ds_String* string, ds_String* append);
 
-char ds_pop(ds_String* string);
+char            ds_pop(ds_String* string);
+const char*     ds_pop_n(ds_String* string);
+ds_String*      ds_pop_nds(ds_String* string);
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
@@ -97,10 +102,17 @@ static inline void ds_set_is_stack(ds_String* string) {
     string->flags &= ~DS_IS_HEAP;
 }
 
+static inline void ds_set_sticky_heap(ds_String* string) {
+    string->flags |= DS_STICKY_HEAP;
+}
+
 static inline bool ds_has_valid_heap_data(const ds_String* string) {
     return (ds_is_heap(string) && string->heap_data);
 }
 
+static inline bool ds_has_sticky_heap(const ds_String* string) {
+    return (string->flags & DS_STICKY_HEAP) != 0;
+}
 
 // Erroc management
 static ds_ErrorInfo ds_last_error = {0};
@@ -211,6 +223,8 @@ ds_String* ds_init_string(const char* literal) {
         string->capacity = lit_length + 1;
         ds_set_is_heap(string);
     }
+
+    ds_set_sticky_heap(string);
 
     return string;
 }
@@ -335,11 +349,54 @@ void ds_append_dstring(ds_String *string, ds_String *append) {
     }
 }
 
-void ds_append_char(ds_String *string, char c) {
+
+char ds_pop(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+    
+    if (string->length == 0) {
+        DS_SET_ERROR(DS_INVALID_LENGTH, "Length of the string going under 0");
+        return -1;
+    }
+    
+    char c = -1;
+
+    if (ds_is_stack(string)) {
+        c = string->stack_data[string->length];
+        string->stack_data[string->length] = '\0';
+        string->length--;
+    }
+    else if (ds_has_valid_heap_data(string) && ds_has_sticky_heap(string)) {
+        c = string->heap_data[string->length];
+        string->heap_data[string->length] = '\0';
+        string->length--;
+    }
+    else if (ds_has_valid_heap_data(string)) {
+        c = string->heap_data[string->length];
+        string->length--;
+
+        if (string->length <= DS_SMALL_STRING_CAPACITY) {
+            char* heap_buffer = string->heap_data;
+            memcpy(string->stack_data, heap_buffer, string->length);
+            string->stack_data[string->length + 1] = '\0';
+        }
+        else {
+            string->heap_data[string->length + 1] = '\0';
+        }
+    }
+
+    return c;
 
 }
 
-char ds_pop(ds_String* string) {
+const char* ds_pop_n(ds_String* string) {
+
+}
+
+ds_String* ds_pop_nds(ds_String* string) {
+
 
 }
 

@@ -11,8 +11,13 @@ int main() {
 
     ds_String* string2 = ds_init_string(" Www");
     ds_append_dstring(string1, string2);
+    char c = ds_pop(string2);
+    printf("%c\n", c);
+    ds_pop(string2);
+    ds_pop(string1);
 
-    printf("%s\n", ds_to_c_str(string1));
+
+    printf("%s\n", ds_to_c_str(string2));
 
     ds_free_string(string1);
 
