@@ -66,7 +66,7 @@ void ds_free_string(ds_String* string);
 
 // methods
 const char* ds_to_c_str(ds_String* string);
-void ds_append_literal(ds_String* string, const char* literal);
+void ds_append(ds_String* string, const char* literal);
 void ds_append_dstring(ds_String* string, ds_String* string1);
 void ds_append_char(ds_String* string, char c);
 
@@ -234,8 +234,44 @@ const char* ds_to_c_str(ds_String* string) {
     }
 }
 
-void ds_append_literal(ds_String *string, const char *literal) {
+void ds_append(ds_String *string, const char *literal) {
+    if (!literal) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string in NULL");
+        return;
+    }
 
+    size_t lit_length = strlen(literal);
+    
+    if (string->length + lit_length <= DS_SMALL_STRING_CAPACITY && ds_is_stack(string)) {
+        memcpy(string->stack_data + string->length, literal, lit_length + 1);
+        string->length += lit_length;
+    }
+    else if (ds_is_stack(string)) {
+        char* heap_buffer = (char*)malloc(string->length + lit_length + 1);
+        if (!heap_buffer) {
+            DS_SET_ERROR(DS_ALLOC_FAIL, "Heap buffer allocation failed");
+            return;
+        }
+        memcpy(heap_buffer, string->stack_data, string->length);
+        memcpy(heap_buffer + string->length, literal, lit_length + 1);
+        string->heap_data = heap_buffer;
+        string->length += lit_length;
+        string->capacity = string->length + 1;
+        ds_set_is_heap(string);
+    }
+    else {
+        while (string->capacity <= string->length + lit_length + 1) {
+            string->capacity *= 2;
+            char* heap_buffer = (char*)realloc(string->heap_data, string->capacity);
+            if (!heap_buffer) {
+                DS_SET_ERROR(DS_ALLOC_FAIL, "Failed heap buffer reallocation");
+                return;
+            }
+            string->heap_data = heap_buffer;
+        }
+        memcpy(string->heap_data + string->length, literal, lit_length + 1);
+        string->length += lit_length;
+     }
 }
 
 void ds_append_dstring(ds_String *string, ds_String *string1) {
