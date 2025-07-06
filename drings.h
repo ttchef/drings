@@ -66,6 +66,11 @@ void ds_free_string(ds_String* string);
 
 // methods
 const char* ds_to_c_str(ds_String* string);
+void ds_append_literal(ds_String* string, const char* literal);
+void ds_append_dstring(ds_String* string, ds_String* string1);
+void ds_append_char(ds_String* string, char c);
+
+char ds_pop(ds_String* string);
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
@@ -227,6 +232,22 @@ const char* ds_to_c_str(ds_String* string) {
     else {
         return string->stack_data;
     }
+}
+
+void ds_append_literal(ds_String *string, const char *literal) {
+
+}
+
+void ds_append_dstring(ds_String *string, ds_String *string1) {
+
+}
+
+void ds_append_char(ds_String *string, char c) {
+
+}
+
+char ds_pop(ds_String* string) {
+
 }
 
 #endif

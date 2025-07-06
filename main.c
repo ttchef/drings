@@ -7,6 +7,7 @@
 int main() {
 
     ds_String* string1 = ds_init_string("Hello World Guys");
+
     printf("%s\n", ds_to_c_str(string1));
 
     ds_free_string(string1);
