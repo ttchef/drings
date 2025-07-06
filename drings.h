@@ -364,17 +364,17 @@ char ds_pop(ds_String* string) {
     char c = -1;
 
     if (ds_is_stack(string)) {
-        c = string->stack_data[string->length];
-        string->stack_data[string->length] = '\0';
+        c = string->stack_data[string->length - 1];
+        string->stack_data[string->length - 1] = '\0';
         string->length--;
     }
     else if (ds_has_valid_heap_data(string) && ds_has_sticky_heap(string)) {
-        c = string->heap_data[string->length];
-        string->heap_data[string->length] = '\0';
+        c = string->heap_data[string->length - 1];
+        string->heap_data[string->length - 1] = '\0';
         string->length--;
     }
     else if (ds_has_valid_heap_data(string)) {
-        c = string->heap_data[string->length];
+        c = string->heap_data[string->length - 1];
         string->length--;
 
         if (string->length <= DS_SMALL_STRING_CAPACITY) {
