@@ -6,8 +6,11 @@
 
 int main() {
 
-    ds_String* string1 = ds_init_string("He");
+    ds_String* string1 = ds_init_string("Hello Guys with ");
     ds_append(string1, "llo");
+
+    ds_String* string2 = ds_init_string(" Www");
+    ds_append_dstring(string1, string2);
 
     printf("%s\n", ds_to_c_str(string1));
 

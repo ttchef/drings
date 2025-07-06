@@ -67,7 +67,7 @@ void ds_free_string(ds_String* string);
 // methods
 const char* ds_to_c_str(ds_String* string);
 void ds_append(ds_String* string, const char* literal);
-void ds_append_dstring(ds_String* string, ds_String* string1);
+void ds_append_dstring(ds_String* string, ds_String* append);
 void ds_append_char(ds_String* string, char c);
 
 char ds_pop(ds_String* string);
@@ -216,6 +216,12 @@ ds_String* ds_init_string(const char* literal) {
 }
 
 void ds_free_string(ds_String* string)  {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return;
+    }
+
+
     if (ds_is_heap(string)) {
         free(string->heap_data);
         string->heap_data = NULL;
@@ -225,6 +231,10 @@ void ds_free_string(ds_String* string)  {
 }
 
 const char* ds_to_c_str(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
    
     if (ds_has_valid_heap_data(string)) {
         return string->heap_data;
@@ -235,7 +245,7 @@ const char* ds_to_c_str(ds_String* string) {
 }
 
 void ds_append(ds_String *string, const char *literal) {
-    if (!literal) {
+    if (!literal || !string) {
         DS_SET_ERROR(DS_INVALID_INPUT, "Input string in NULL");
         return;
     }
@@ -274,8 +284,55 @@ void ds_append(ds_String *string, const char *literal) {
      }
 }
 
-void ds_append_dstring(ds_String *string, ds_String *string1) {
+void ds_append_dstring(ds_String *string, ds_String *append) {
+    if (!string || !append) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string in NULL");
+        return;
+    }
+    
+    if (string->length + append->length <= DS_SMALL_STRING_CAPACITY && ds_is_stack(string) && ds_is_stack(append)) {
+        memcpy(string->stack_data + string->length, append->stack_data, append->length + 1);
+        string->length += append->length;
+    }
+    else if (ds_is_stack(string) && ds_is_stack(append)) {
+        size_t new_length = string->length + append->length;
+        char* heap_buffer = (char*)malloc(string->length + new_length + 1);
+        if (!heap_buffer) {
+            DS_SET_ERROR(DS_ALLOC_FAIL, "Failed heap buffer allocation");
+            return;
+        }
+        memcpy(heap_buffer, string->stack_data, string->length);
+        memcpy(heap_buffer + string->length, append->stack_data, append->length + 1);
+        string->heap_data = heap_buffer;
+        string->capacity = new_length + 1;
+        string->length = new_length;
+        ds_set_is_heap(string);
+    }
+    else if (ds_is_heap(string)) {
+        size_t new_length = string->length + append->length;
+        char* heap_buffer = NULL;
+        while (string->capacity <= new_length + 1) {
+            string->capacity *= 2;
+            heap_buffer = (char*)realloc(string->heap_data, string->capacity);
+            if (!heap_buffer) {
+                DS_SET_ERROR(DS_ALLOC_FAIL, "Failed heap buffer reallocation");
+                return;
+            }
+        }
 
+        if (heap_buffer) {
+            memcpy(heap_buffer, string->heap_data, string->length);
+            string->heap_data = heap_buffer; 
+        }
+
+        if (ds_is_stack(append)) {
+            memcpy(string->heap_data + string->length, append->stack_data, append->length + 1);
+        }
+        else {
+            memcpy(string->heap_data + string->length, append->heap_data, append->length + 1);
+        }
+        string->length = new_length;
+    }
 }
 
 void ds_append_char(ds_String *string, char c) {
