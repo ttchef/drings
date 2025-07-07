@@ -73,8 +73,6 @@ ds_String*      ds_init_string(const char* string);
 void            ds_free_string(ds_String* string);
 
 // methods
-void            ds_set(ds_String* string, const char* literal);
-void            ds_clone(ds_String* string, ds_String* clone);
 const char*     ds_to_c_str(ds_String* string);
 void            ds_append(ds_String* string, const char* literal);
 void            ds_append_dstring(ds_String* string, ds_String* append);
@@ -85,6 +83,8 @@ size_t          ds_pop_n(ds_String* string, size_t n);
 size_t          ds_reserve(ds_String* string, size_t n);
 size_t          ds_clear(ds_String* string);
 bool            ds_equal(ds_String* string0, ds_String* string1); // true if equal
+size_t          ds_set(ds_String* string, const char* literal);
+size_t          ds_clone(ds_String* string, ds_String* clone);
 size_t          ds_trim_whitespace(ds_String* string);
 size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
 ds_String*      ds_split(ds_String* string, char c);
@@ -564,6 +564,46 @@ bool ds_equal(ds_String* string0, ds_String* string1) {
     
     DS_SET_ERROR(DS_REACHED_UNINTENTIONAL_CONTROL_BLOCK, "Reached unententionally end of a function");
     return false;
+}
+
+size_t ds_set(ds_String* string, const char* literal) {
+    if (!string || !literal) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    size_t lit_length = strlen(literal);
+
+    if (lit_length <= DS_SMALL_STRING_CAPACITY) {
+        // move to stack
+        if (ds_is_heap(string) && !ds_has_sticky_heap(string)) {
+            free(string->heap_data);
+            string->heap_data = NULL;
+            ds_set_is_stack(string);
+            string->capacity = DS_STACK_CAPACITY;
+        }
+        memcpy(string->stack_data, literal, lit_length + 1);
+    }
+    else {
+        if (ds_is_stack(string)) {
+            ds_move_dstring_to_heap(string);
+        }
+
+        while (string->capacity <= lit_length + 1) {
+            string->capacity *= 2;
+            char* heap_buffer = (char*)realloc(string->heap_data, string->capacity);
+            if (!heap_buffer) {
+                DS_SET_ERROR(DS_ALLOC_FAIL, "Heap buffer reallocation failed");
+                return -1;
+            }
+            string->heap_data = heap_buffer;
+        }
+        memcpy(string->heap_data, literal, lit_length + 1);
+    }
+    
+    string->length = lit_length; 
+
+    return 0;
 }
 
 #endif

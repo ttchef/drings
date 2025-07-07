@@ -25,9 +25,12 @@ int main() {
     printf("%s\n", ds_to_c_str(string3));
 
     ds_String* s1 = ds_init_string("Hello");
-    ds_String* s2 = ds_init_string("Hello");
+    ds_String* s2 = ds_init_string("Hello guys wtf is going");
 
     printf("%b\n", ds_equal(s1, s2));
+
+    ds_set(s1, "I am");
+    printf("%s\n", ds_to_c_str(s1));
 
     ds_free_string(string1);
     ds_free_string(string2);
