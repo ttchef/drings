@@ -75,7 +75,13 @@ void            ds_append_dstring(ds_String* string, ds_String* append);
 
 char            ds_pop(ds_String* string);
 size_t          ds_pop_n(ds_String* string, size_t n);
-size_t          ds_pop_nds(ds_String* string, size_t n);
+
+size_t          ds_reserve(ds_String* string, size_t n);
+size_t          ds_clear(ds_String* string);
+bool            ds_compare(ds_String* string0, ds_String* string1);
+size_t          ds_trim_whitespace(ds_String* string);
+size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
+ds_String*      ds_split(ds_String* string, char c);
 
 
 // Erroc management
@@ -464,10 +470,7 @@ size_t ds_pop_n(ds_String* string, size_t n) {
     return 0;
 }
 
-size_t ds_pop_nds(ds_String* string, size_t n) {
 
-
-}
 
 #endif
 
