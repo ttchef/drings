@@ -25,6 +25,7 @@ typedef enum {
     DS_OUT_OF_BOUNDS = -3,
     DS_INVALID_INPUT = -4,
     DS_INVALID_LENGTH = -5,
+    DS_REACHED_UNINTENTIONAL_CONTROL_BLOCK = -6,
 } DS_RESULT;
 
 typedef enum {
@@ -78,7 +79,7 @@ size_t          ds_pop_n(ds_String* string, size_t n);
 
 size_t          ds_reserve(ds_String* string, size_t n);
 size_t          ds_clear(ds_String* string);
-bool            ds_compare(ds_String* string0, ds_String* string1);
+bool            ds_equal(ds_String* string0, ds_String* string1); // true if equal
 size_t          ds_trim_whitespace(ds_String* string);
 size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
 ds_String*      ds_split(ds_String* string, char c);
@@ -227,6 +228,7 @@ const char* ds_error_string(DS_RESULT result) {
         case DS_OUT_OF_BOUNDS:  return "Index out of bounds";
         case DS_INVALID_INPUT:  return "Invalid function input";
         case DS_INVALID_LENGTH: return "Invalid Length";
+        case DS_REACHED_UNINTENTIONAL_CONTROL_BLOCK: return "Unintentional control block reached";
         default:                return "Unkown Error";
     }
 }
@@ -510,6 +512,48 @@ size_t ds_clear(ds_String* string) {
     string->length = 0;
 
     return 0;
+}
+
+bool ds_equal(ds_String* string0, ds_String* string1) {
+    if (!string0 || !string1) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return false;
+    }
+
+    if (string0->length != string1->length) {
+        return false;
+    }
+
+    if (ds_is_stack(string0) && ds_is_stack(string1)) {
+        for (int i = 0; i < string0->length; i++) {
+            if (string0->stack_data[i] != string1->stack_data[i]) return false;
+        }
+        return true;
+    }
+
+    else if (ds_is_stack(string0) && ds_is_heap(string1)) {
+        for (int i = 0; i < string0->length; i++) {
+            if (string0->stack_data[i] != string1->heap_data[i]) return false;
+        }
+        return true;
+    }
+
+    else if (ds_is_heap(string0) && ds_is_stack(string1)) {
+        for (int i = 0; i < string0->length; i++) {
+            if (string0->heap_data[i] != string1->stack_data[i]) return false;
+        }
+        return true;
+    }
+
+    else if (ds_is_heap(string0) && ds_is_heap(string1)) {
+        for (int i = 0; i < string0->length; i++) {
+            if (string0->heap_data[i] != string1->heap_data[i]) return false;
+        }
+        return true;
+    }
+    
+    DS_SET_ERROR(DS_REACHED_UNINTENTIONAL_CONTROL_BLOCK, "Reached unententionally end of a function");
+    return false;
 }
 
 #endif
