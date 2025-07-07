@@ -470,6 +470,28 @@ size_t ds_pop_n(ds_String* string, size_t n) {
     return 0;
 }
 
+size_t ds_reserve(ds_String *string, size_t n) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+        
+    if (ds_is_stack(string)) {
+        ds_move_dstring_to_heap(string);
+    }
+
+    char* heap_buffer = (char*)realloc(string->heap_data, string->capacity + n);
+    if (!heap_buffer) {
+        DS_SET_ERROR(DS_ALLOC_FAIL, "Heap buffer reallocation failed");
+        return -1;
+    }
+
+    memcpy(heap_buffer, string->heap_data, string->length + 1);
+    string->heap_data = heap_buffer;
+    string->capacity += n;
+
+    return 0;
+}
 
 
 #endif
