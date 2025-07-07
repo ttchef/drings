@@ -9,6 +9,7 @@ This libary is under developement right now so some functions may not work or ha
 # Example 
 ```c
 
+
 #include <stdio.h> 
 
 #define DRINGS_IMPL
@@ -34,12 +35,18 @@ int main() {
     ds_clear(string3);
     printf("%s\n", ds_to_c_str(string3));
 
+    ds_String* s1 = ds_init_string("Hello");
+    ds_String* s2 = ds_init_string("Hello");
+
+    printf("%b\n", ds_equal(s1, s2));
+
     ds_free_string(string1);
     ds_free_string(string2);
     ds_free_string(string3);
+    ds_free_string(s1);
+    ds_free_string(s2);
 
     return 0;
 }
-
 
 ```

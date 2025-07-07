@@ -15,6 +15,11 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+#ifdef DS_NAMESPACE
+namespace ds { 
+#endif
+
 #endif
 
 typedef enum {
@@ -193,6 +198,11 @@ static inline size_t ds_move_dsstring_to_stack(ds_String* string) {
 
 
 #ifdef __cplusplus
+
+#ifdef DS_NAMESPACE
+} 
+#endif
+
 }
 #endif
 
