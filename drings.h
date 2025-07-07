@@ -3,7 +3,7 @@
 #define DRINGS_H 
 
 #define DRINGS_IMPL // Temp only for development
-                    //
+                    
 #define DS_SMALL_STRING_CAPACITY 15
 #define DS_STACK_CAPACITY 0
 
@@ -74,8 +74,37 @@ void            ds_append(ds_String* string, const char* literal);
 void            ds_append_dstring(ds_String* string, ds_String* append);
 
 char            ds_pop(ds_String* string);
-const char*     ds_pop_n(ds_String* string);
-ds_String*      ds_pop_nds(ds_String* string);
+size_t          ds_pop_n(ds_String* string, size_t n);
+size_t          ds_pop_nds(ds_String* string, size_t n);
+
+
+// Erroc management
+static ds_ErrorInfo ds_last_error = {0};
+static bool ds_error_login_enabled = true;
+
+void ds_default_error_callback(const ds_ErrorInfo* error);
+
+typedef void (*ds_ErrorCallback)(const ds_ErrorInfo* error);
+static ds_ErrorCallback ds_error_callback = ds_default_error_callback;
+
+#define DS_SET_ERROR(code, msg, ...) \
+    do { \
+        if (ds_error_login_enabled) { \
+            ds_last_error.error_code = code; \
+            ds_last_error.function_name = __func__; \
+            ds_last_error.file_name = __FILE__; \
+            ds_last_error.line_number = __LINE__; \
+            snprintf(ds_last_error.message, sizeof(ds_last_error.message), msg, ##__VA_ARGS__); \
+            if (ds_error_callback) ds_error_callback(&ds_last_error); \
+        } \
+    } while(0)
+
+void ds_set_error_callback(ds_ErrorCallback callback);
+void ds_enable_error_loggin(bool enabled);
+const ds_ErrorInfo* ds_get_last_error();
+void ds_clear_last_error();
+const char* ds_error_string(DS_RESULT result);
+
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
@@ -114,32 +143,43 @@ static inline bool ds_has_sticky_heap(const ds_String* string) {
     return (string->flags & DS_STICKY_HEAP) != 0;
 }
 
-// Erroc management
-static ds_ErrorInfo ds_last_error = {0};
-static bool ds_error_login_enabled = true;
+static inline size_t ds_move_dstring_to_heap(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input String is NULL");
+        return -1;
+    }
 
-void ds_default_error_callback(const ds_ErrorInfo* error);
+    string->capacity = string->length + 1;
+    char* heap_buffer = (char*)malloc(string->capacity);
+    if (!heap_buffer) {
+        DS_SET_ERROR(DS_ALLOC_FAIL, "Couldnt allocate heap buffer");
+        return -1;
+    }
 
-typedef void (*ds_ErrorCallback)(const ds_ErrorInfo* error);
-static ds_ErrorCallback ds_error_callback = ds_default_error_callback;
+    memcpy(heap_buffer, string->stack_data, string->length + 1);
+    string->heap_data = heap_buffer;
+    ds_set_is_heap(string);
 
-#define DS_SET_ERROR(code, msg, ...) \
-    do { \
-        if (ds_error_login_enabled) { \
-            ds_last_error.error_code = code; \
-            ds_last_error.function_name = __func__; \
-            ds_last_error.file_name = __FILE__; \
-            ds_last_error.line_number = __LINE__; \
-            snprintf(ds_last_error.message, sizeof(ds_last_error.message), msg, ##__VA_ARGS__); \
-            if (ds_error_callback) ds_error_callback(&ds_last_error); \
-        } \
-    } while(0)
+    return 0;
+}
 
-void ds_set_error_callback(ds_ErrorCallback callback);
-void ds_enable_error_loggin(bool enabled);
-const ds_ErrorInfo* ds_get_last_error();
-void ds_clear_last_error();
-const char* ds_error_string(DS_RESULT result);
+static inline size_t ds_move_dsstring_to_stack(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    if (string->length > DS_SMALL_STRING_CAPACITY) {
+        DS_SET_ERROR(DS_INVALID_LENGTH, "Input string is to big for stack");
+        return -1;
+    }
+
+    memcpy(string->stack_data, string->heap_data, string->length + 1);
+    string->capacity = DS_STACK_CAPACITY;
+    ds_set_is_stack(string);
+
+    return 0;
+}
 
 // private
 
@@ -392,11 +432,39 @@ char ds_pop(ds_String* string) {
 
 }
 
-const char* ds_pop_n(ds_String* string) {
+size_t ds_pop_n(ds_String* string, size_t n) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input String is NULL");
+        return -1;
+    }
 
+    if (string->length - n < 0) {
+        DS_SET_ERROR(DS_INVALID_LENGTH, "Length - n < 0");
+        return -1;
+    }
+
+    // move to stack
+    if ((ds_is_heap(string) && string->length <= DS_SMALL_STRING_CAPACITY && !ds_has_sticky_heap(string))
+            || ds_is_stack(string)) {
+        string->length -= n;
+        
+        if (ds_is_heap(string)) {
+            string->heap_data[string->length] = '\0';
+            ds_move_dsstring_to_stack(string);
+        }
+        else {
+            string->stack_data[string->length] = '\0';
+        }
+    }
+    else {
+        string->length -= n;
+        string->heap_data[string->length] = '\0';
+    }
+    
+    return 0;
 }
 
-ds_String* ds_pop_nds(ds_String* string) {
+size_t ds_pop_nds(ds_String* string, size_t n) {
 
 
 }

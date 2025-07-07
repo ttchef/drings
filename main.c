@@ -11,10 +11,8 @@ int main() {
 
     ds_String* string2 = ds_init_string("ich gehe zur sch");
     ds_append_dstring(string1, string2);
-    char c = ds_pop(string2);
-    printf("%c\n", c);
-
-
+        
+    ds_pop_n(string2, 5);
     printf("%s\n", ds_to_c_str(string2));
 
     ds_free_string(string1);
