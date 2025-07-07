@@ -1,4 +1,4 @@
 
 all:
-	gcc -Wall -o2 main.c -o main
+	gcc -Wall -g main.c -o main
 

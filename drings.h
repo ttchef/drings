@@ -226,6 +226,7 @@ const char* ds_error_string(DS_RESULT result) {
         case DS_ALLOC_FAIL:     return "Memory allocation failed";
         case DS_OUT_OF_BOUNDS:  return "Index out of bounds";
         case DS_INVALID_INPUT:  return "Invalid function input";
+        case DS_INVALID_LENGTH: return "Invalid Length";
         default:                return "Unkown Error";
     }
 }
@@ -444,7 +445,7 @@ size_t ds_pop_n(ds_String* string, size_t n) {
         return -1;
     }
 
-    if (string->length - n < 0) {
+    if (((int32_t)string->length) - (int32_t)n < 0) {
         DS_SET_ERROR(DS_INVALID_LENGTH, "Length - n < 0");
         return -1;
     }
@@ -493,6 +494,23 @@ size_t ds_reserve(ds_String *string, size_t n) {
     return 0;
 }
 
+size_t ds_clear(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    if (ds_is_stack(string)) {
+        string->stack_data[0] = '\0';
+    }
+    else {
+        string->heap_data[0] = '\0';
+    }
+
+    string->length = 0;
+
+    return 0;
+}
 
 #endif
 
