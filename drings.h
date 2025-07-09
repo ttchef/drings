@@ -635,10 +635,21 @@ size_t ds_clone(ds_String* string, ds_String* clone) {
         memcpy(string->heap_data, clone->heap_data, clone->length + 1);
     }
     else if (ds_is_heap(string) && ds_is_stack(clone)) {
-        
+        ds_clear(string);
+        ds_move_dsstring_to_stack(string);
+        memcpy(string->stack_data, clone->stack_data, clone->length + 1);
     }
     else if (ds_is_heap(string) && ds_is_heap(clone)) {
-    
+        if (string->capacity != clone->capacity) {
+            char* heap_buffer = (char*)realloc(string->heap_data, clone->capacity);
+            if (!heap_buffer) {
+                DS_SET_ERROR(DS_ALLOC_FAIL, "Heap buffer reallocation failed");
+                return -1;
+            }
+            string->heap_data = heap_buffer;
+            string->capacity = clone->capacity;
+        }
+        memcpy(string->heap_data, clone->heap_data, clone->length + 1);
     }
 
     string->length = clone->length;
