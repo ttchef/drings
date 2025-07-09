@@ -721,6 +721,28 @@ size_t ds_trim_whitespace_flags(ds_String* string, uint32_t flags) {
     return 0;
 }
 
+ds_String* ds_split(ds_String* string, char seperator) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    char* data = ds_is_heap(string) ? string->heap_data : string->stack_data;
+
+    size_t start;
+    for (start = 0; start < string->length && data[start] != seperator; start++);
+    if (start != string->length) {
+        ds_String* cut = ds_init_string("");
+        ds_clone(cut, string);
+        char* c_data = ds_is_heap(cut) ? cut->heap_data : cut->stack_data;
+        memcpy(c_data, data + start + 1, string->length - start + 1);
+        data[start] = '\0';
+        return cut;
+    }
+
+    return NULL;
+}
+
 #endif
 
 

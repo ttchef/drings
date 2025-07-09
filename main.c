@@ -39,7 +39,9 @@ int main() {
     */
     ds_String* s3 = ds_init_string("     Hello A    B   C  ");
     ds_trim_whitespace_flags(s3, DS_FRONT | DS_BACK);
+    ds_String* s4 = ds_split(s3, ' ');
     printf("%s\n", ds_to_c_str(s3));
+    printf("%s\n", ds_to_c_str(s4));
 
     /*
     ds_free_string(string1);
