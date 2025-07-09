@@ -2,6 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
+#include <cstdlib>
 #define DRINGS_IMPL // Temp only for development
                     
 #define DS_SMALL_STRING_CAPACITY 15
@@ -87,7 +88,7 @@ size_t          ds_set(ds_String* string, const char* literal);
 size_t          ds_clone(ds_String* string, ds_String* clone);
 size_t          ds_trim_whitespace(ds_String* string);
 size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
-ds_String*      ds_split(ds_String* string, char c);
+ds_String*      ds_split(ds_String* string, char c); // returns split up string from first occurance
 
 
 // Erroc management
@@ -604,6 +605,45 @@ size_t ds_set(ds_String* string, const char* literal) {
     string->length = lit_length; 
 
     return 0;
+}
+
+/*  NOTE:
+ *  this function can ignore flags of
+ *  the string because it is cloning the 
+ *  argument string with its flags
+ */
+size_t ds_clone(ds_String* string, ds_String* clone) {
+    if (!string || !clone) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    if (ds_is_stack(string) && ds_is_stack(clone)) {
+        memcpy(string->stack_data, clone->stack_data, clone->length + 1);
+    }
+    else if (ds_is_stack(string) && ds_is_heap(clone)) {
+        ds_move_dstring_to_heap(string);
+        if (string->capacity != clone->capacity) {
+            char* heap_buffer = (char*)realloc(string->heap_data, clone->capacity);
+            if (!heap_buffer) {
+                DS_SET_ERROR(DS_ALLOC_FAIL, "Heap buffer reallocation failed");
+                return -1;
+            }
+            string->heap_data = heap_buffer;
+            string->capacity = clone->capacity;
+        }
+        memcpy(string->heap_data, clone->heap_data, clone->length + 1);
+    }
+    else if (ds_is_heap(string) && ds_is_stack(clone)) {
+        
+    }
+    else if (ds_is_heap(string) && ds_is_heap(clone)) {
+    
+    }
+
+    string->length = clone->length;
+    string->flags = clone->flags;
+    
 }
 
 #endif
