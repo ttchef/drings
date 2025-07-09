@@ -6,6 +6,7 @@
 
 int main() {
 
+    /*
     ds_String* string1 = ds_init_string("He");
     ds_append(string1, "llo");
 
@@ -35,11 +36,20 @@ int main() {
     ds_clone(string1, s2);
     printf("%s\n", ds_to_c_str(string1));
 
+    */
+    ds_String* s3 = ds_init_string("     Hello A    B   C  ");
+    ds_trim_whitespace(s3);
+    printf("%s\n", ds_to_c_str(s3));
+
+    /*
     ds_free_string(string1);
     ds_free_string(string2);
     ds_free_string(string3);
     ds_free_string(s1);
     ds_free_string(s2);
+    */
+    ds_free_string(s3);
+
 
     return 0;
 }

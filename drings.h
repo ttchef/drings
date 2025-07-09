@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-//#define DRINGS_IMPL // Temp only for development
+#define DRINGS_IMPL // Temp only for development
                     
 #define DS_SMALL_STRING_CAPACITY 15
 #define DS_STACK_CAPACITY 0
@@ -12,6 +12,7 @@
 #include <stdlib.h> 
 #include <stdint.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -653,7 +654,29 @@ size_t ds_clone(ds_String* string, ds_String* clone) {
 
     string->length = clone->length;
     string->flags = clone->flags;
+
+    return 0;
+}
+
+size_t ds_trim_whitespace(ds_String* string) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    char* data = ds_is_heap(string) ? string->heap_data : string->stack_data;
+
+    size_t write = 0;
+    for (size_t read = 0; read < string->length; read++) {
+        if (!isspace((unsigned char)data[read])) {
+            data[write++] = data[read];
+        }
+    }
+
+    data[write] = '\0';
+    string->length = write;
     
+    return 0;
 }
 
 #endif
