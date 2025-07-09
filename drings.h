@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-//#define DRINGS_IMPL // Temp only for development
+#define DRINGS_IMPL // Temp only for development
                     
 #define DS_SMALL_STRING_CAPACITY 15
 #define DS_STACK_CAPACITY 0
@@ -506,7 +506,6 @@ size_t ds_reserve(ds_String *string, size_t n) {
         return -1;
     }
 
-    memcpy(heap_buffer, string->heap_data, string->length + 1);
     string->heap_data = heap_buffer;
     string->capacity += n;
 
