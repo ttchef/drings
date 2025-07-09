@@ -41,6 +41,12 @@ typedef enum {
     DS_STICKY_HEAP = 0x8,
 } DS_FLAG;
 
+typedef enum {
+    DS_FRONT = 0x1,
+    DS_BACK = 0x2,
+    DS_ALL = 0x4,
+} DS_TRIM_FLAG;
+
 typedef struct {
     uint32_t length;
     uint32_t capacity;
@@ -676,6 +682,42 @@ size_t ds_trim_whitespace(ds_String* string) {
     data[write] = '\0';
     string->length = write;
     
+    return 0;
+}
+
+size_t ds_trim_whitespace_flags(ds_String* string, uint32_t flags) {
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    if (flags & DS_ALL) {
+        return ds_trim_whitespace(string);
+    }
+
+    char* data = ds_is_heap(string) ? string->heap_data : string->stack_data;
+
+    size_t start = 0, end = string->length;
+
+    if (flags & DS_FRONT) {
+        while (start < end && isspace((unsigned char)data[start])) {
+            start++;
+        }
+    }
+
+    if (flags & DS_BACK) {
+        while (end > start && isspace((unsigned char)data[end - 1])) {
+            end--;
+        }
+    }
+
+    size_t delta_length = end - start;
+    if (start > 0 && delta_length > 0) {
+        memmove(data, data + start, delta_length);
+    }
+    data[delta_length] = '\0';
+    string->length = delta_length;
+
     return 0;
 }
 
