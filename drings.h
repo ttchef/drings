@@ -2,7 +2,7 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-#define DRINGS_IMPL // Temp only for development
+//#define DRINGS_IMPL // Temp only for development
                     
 #define DS_SMALL_STRING_CAPACITY 15
 #define DS_STACK_CAPACITY 0
