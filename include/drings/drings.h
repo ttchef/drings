@@ -101,7 +101,8 @@ ds_StringView   ds_string_view_from_string(const ds_String* string);
 ds_StringView   ds_string_view_from_buffer(const char* data, uint32_t length);
 ds_StringView   ds_string_view_from_substr(const ds_StringView* view, uint32_t start, uint32_t length);
 ds_StringView   ds_string_view_from_substr_to_end(const ds_StringView* view, uint32_t start);
-ds_StringView   ds_string_view_from_string_substr(const ds_String* string, uint32_t start, uint32_t length);
+ds_StringView   ds_string_view_from_string_substr(ds_String* string, uint32_t start, uint32_t length);
+ds_StringView   ds_string_view_from_string_substr_to_end(ds_String* string, uint32_t start);
 
 bool            ds_string_view_equal(const ds_StringView* view1, const ds_StringView* view2);
 bool            ds_string_view_equal_cstr(const ds_StringView* view, const char* str);
