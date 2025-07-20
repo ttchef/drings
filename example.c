@@ -1,8 +1,7 @@
 
 #include <stdio.h> 
 
-#define DRINGS_IMPL
-#include "drings.h"
+#include <drings/drings.h>
 
 int main() {
 
