@@ -112,7 +112,7 @@ int32_t         ds_string_view_find_char(const ds_StringView* view, char c);
 int32_t         ds_string_view_find_substr(const ds_StringView* view, const ds_StringView* substr);
 
 bool            ds_string_view_starts_with(const ds_StringView* view, const ds_StringView* prefix);
-bool            ds_string_view_ends_with(const ds_StringView* view, const ds_String* suffix);
+bool            ds_string_view_ends_with(const ds_StringView* view, const ds_StringView* suffix);
 
 ds_String*      ds_string_from_view(const ds_StringView* view);
 

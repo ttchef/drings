@@ -690,6 +690,72 @@ bool ds_string_view_is_empty(const ds_StringView *view) {
     return (!view || view->length) == 0;
 }
 
+int32_t ds_string_view_find_char(const ds_StringView *view, char c) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
 
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return false;
+    }
 
+    for (size_t i = 0; i < view->length; i++) {
+        if (view->data[i] == c) return (int32_t)i;
+    }
 
+    return -1;
+}
+
+int32_t ds_string_view_find_substr(const ds_StringView *view, const ds_StringView *substr) {
+    if (!view || !substr || !view->data || !substr->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or substr is NULL or has no data");
+        return -1;
+    }
+
+    if (substr->length == 0) {
+        return 0;
+    }
+
+    if (substr->length > view->length) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < view->length - substr->length; i++) {
+        if (memcmp(view->data + i, substr->data, substr->length) == 0) {
+            return (int32_t)i;
+        }
+    }
+
+    return -1;
+}
+
+bool ds_string_view_starts_with(const ds_StringView *view, const ds_StringView *prefix) {
+    if (!view || !prefix || !view->data || !prefix->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or prefix is NULL or has no data");
+        return false;
+    }
+
+    if (prefix->length == 0) return true;
+    if (prefix->length > view->length) return false;
+
+    if (memcmp(view->data, prefix->data, prefix->length) == 0) return true;
+
+    return false;
+}
+
+bool ds_string_view_ends_with(const ds_StringView *view, const ds_StringView *suffix) {
+    if (!view || !suffix || !view->data || !suffix->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or suffix is NULL or has no data");
+        return false;
+    }
+
+    if (suffix->length == 0) return true;
+    if (suffix->length > view->length) return false;
+
+    if (memcmp(view->data + view->length - suffix->length, suffix->data, suffix->length) == 0) return true;
+
+    return false;
+
+}
