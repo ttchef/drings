@@ -2,8 +2,6 @@
 #ifndef DRINGS_H
 #define DRINGS_H 
 
-#define DRINGS_IMPL // Temp only for development
-                    
 #define DS_SMALL_STRING_CAPACITY 15
 #define DS_STACK_CAPACITY 0
 
@@ -68,6 +66,12 @@ typedef struct {
 } ds_MutableStringView;
 
 typedef struct {
+    ds_StringView* views;
+    uint32_t count;
+    uint32_t capacity;
+} ds_StringViewArray;
+
+typedef struct {
     DS_RESULT error_code;
     const char* function_name;
     const char* file_name;
@@ -96,6 +100,31 @@ size_t          ds_trim_whitespace(ds_String* string);
 size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
 ds_String*      ds_split(ds_String* string, char c); // returns split up string from first occurance
 
+// string view
+ds_StringView   ds_string_view_from_cstr(const char* str);
+ds_StringView   ds_string_view_from_dstring(const ds_String* string);
+ds_StringView   ds_string_view_from_buffer(const char* data, uint32_t length);
+ds_StringView   ds_string_view_from_substr(const ds_StringView* view, uint32_t start, uint32_t length);
+
+bool            ds_string_view_equal(const ds_StringView* view1, const ds_StringView* view2);
+bool            ds_string_view_equal_cstr(const ds_StringView* view, const char* str);
+bool            ds_string_view_is_empty(const ds_StringView* view);
+
+int32_t         ds_string_view_find_char(const ds_StringView* view, char c);
+int32_t         ds_string_view_find_substr(const ds_StringView* view, const ds_StringView* substr);
+bool            ds_string_view_starts_with(const ds_StringView* view, const ds_StringView* prefix);
+bool            ds_string_view_ends_with(const ds_StringView* view, const ds_String* suffix);
+
+ds_String*      ds_string_from_view(const ds_StringView* view);
+
+ds_StringView   ds_string_view_trim_whitespace(const ds_StringView* view);
+void            ds_string_view_print(const ds_StringView* view, const char* label);
+
+int32_t         ds_string_view_to_int(const ds_StringView* view, bool* success);
+double          ds_string_view_to_double(const ds_StringView* view, bool* success);
+
+ds_StringViewArray* ds_string_view_split(const ds_StringView* view, char split);
+void            ds_free_string_view_array(ds_StringViewArray* array);
 
 // Erroc management
 static ds_ErrorInfo ds_last_error = {0};
@@ -123,7 +152,6 @@ void ds_enable_error_loggin(bool enabled);
 const ds_ErrorInfo* ds_get_last_error();
 void ds_clear_last_error();
 const char* ds_error_string(DS_RESULT result);
-
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
