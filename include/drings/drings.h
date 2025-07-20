@@ -61,11 +61,6 @@ typedef struct {
 } ds_StringView;
 
 typedef struct {
-    char* data;
-    uint32_t length;
-} ds_MutableStringView;
-
-typedef struct {
     ds_StringView* views;
     uint32_t count;
     uint32_t capacity;
@@ -102,9 +97,11 @@ ds_String*      ds_split(ds_String* string, char c); // returns split up string 
 
 // string view
 ds_StringView   ds_string_view_from_cstr(const char* str);
-ds_StringView   ds_string_view_from_dstring(const ds_String* string);
+ds_StringView   ds_string_view_from_string(const ds_String* string);
 ds_StringView   ds_string_view_from_buffer(const char* data, uint32_t length);
 ds_StringView   ds_string_view_from_substr(const ds_StringView* view, uint32_t start, uint32_t length);
+ds_StringView   ds_string_view_from_substr_to_end(const ds_StringView* view, uint32_t start);
+ds_StringView   ds_string_view_from_string_substr(const ds_String* string, uint32_t start, uint32_t length);
 
 bool            ds_string_view_equal(const ds_StringView* view1, const ds_StringView* view2);
 bool            ds_string_view_equal_cstr(const ds_StringView* view, const char* str);
@@ -112,6 +109,7 @@ bool            ds_string_view_is_empty(const ds_StringView* view);
 
 int32_t         ds_string_view_find_char(const ds_StringView* view, char c);
 int32_t         ds_string_view_find_substr(const ds_StringView* view, const ds_StringView* substr);
+
 bool            ds_string_view_starts_with(const ds_StringView* view, const ds_StringView* prefix);
 bool            ds_string_view_ends_with(const ds_StringView* view, const ds_String* suffix);
 
@@ -226,6 +224,10 @@ static inline size_t ds_move_dsstring_to_stack(ds_String* string) {
     ds_set_is_stack(string);
 
     return 0;
+}
+
+static inline char* ds_string_get_data(ds_String* string) {
+    return ds_is_heap(string) ? string->heap_data : string->stack_data;
 }
 
 // private
