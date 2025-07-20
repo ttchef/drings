@@ -97,7 +97,7 @@ ds_String*      ds_split(ds_String* string, char c); // returns split up string 
 
 // string view
 ds_StringView   ds_string_view_from_cstr(const char* str);
-ds_StringView   ds_string_view_from_string(const ds_String* string);
+ds_StringView   ds_string_view_from_string(ds_String* string);
 ds_StringView   ds_string_view_from_buffer(const char* data, uint32_t length);
 ds_StringView   ds_string_view_from_substr(const ds_StringView* view, uint32_t start, uint32_t length);
 ds_StringView   ds_string_view_from_substr_to_end(const ds_StringView* view, uint32_t start);

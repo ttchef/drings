@@ -63,9 +63,10 @@ typedef struct {
 } ds_StringView;
 
 typedef struct {
-    char* data;
-    uint32_t length;
-} ds_MutableStringView;
+    ds_StringView* views;
+    uint32_t count;
+    uint32_t capacity;
+} ds_StringViewArray;
 
 typedef struct {
     DS_RESULT error_code;
@@ -96,6 +97,37 @@ size_t          ds_trim_whitespace(ds_String* string);
 size_t          ds_trim_whitespace_flags(ds_String* string, uint32_t flags);
 ds_String*      ds_split(ds_String* string, char c); // returns split up string from first occurance
 
+// string view
+ds_StringView   ds_string_view_from_cstr(const char* str);
+ds_StringView   ds_string_view_from_string(ds_String* string);
+ds_StringView   ds_string_view_from_buffer(const char* data, uint32_t length);
+ds_StringView   ds_string_view_from_substr(const ds_StringView* view, uint32_t start, uint32_t length);
+ds_StringView   ds_string_view_from_substr_to_end(const ds_StringView* view, uint32_t start);
+ds_StringView   ds_string_view_from_string_substr(ds_String* string, uint32_t start, uint32_t length);
+ds_StringView   ds_string_view_from_string_substr_to_end(ds_String* string, uint32_t start);
+
+bool            ds_string_view_equal(const ds_StringView* view1, const ds_StringView* view2);
+bool            ds_string_view_equal_cstr(const ds_StringView* view, const char* str);
+bool            ds_string_view_is_empty(const ds_StringView* view);
+
+int32_t         ds_string_view_find_char(const ds_StringView* view, char c);
+int32_t         ds_string_view_find_substr(const ds_StringView* view, const ds_StringView* substr);
+
+bool            ds_string_view_starts_with(const ds_StringView* view, const ds_StringView* prefix);
+bool            ds_string_view_ends_with(const ds_StringView* view, const ds_StringView* suffix);
+
+ds_String*      ds_string_from_view(const ds_StringView* view);
+
+ds_StringView   ds_string_view_trim_whitespace(const ds_StringView* view);
+void            ds_string_view_print(const ds_StringView* view);
+const char*     ds_string_view_get_data(const ds_StringView* view);
+uint32_t        ds_string_view_get_length(const ds_StringView* view);
+
+int32_t         ds_string_view_to_int(const ds_StringView* view, bool* success);
+double          ds_string_view_to_double(const ds_StringView* view, bool* success);
+
+ds_StringViewArray* ds_string_view_split(const ds_StringView* view, char split);
+void            ds_free_string_view_array(ds_StringViewArray* array);
 
 // Erroc management
 static ds_ErrorInfo ds_last_error = {0};
@@ -123,7 +155,6 @@ void ds_enable_error_loggin(bool enabled);
 const ds_ErrorInfo* ds_get_last_error();
 void ds_clear_last_error();
 const char* ds_error_string(DS_RESULT result);
-
 
 // helper
 static inline bool ds_is_heap(const ds_String* string) {
@@ -200,8 +231,11 @@ static inline size_t ds_move_dsstring_to_stack(ds_String* string) {
     return 0;
 }
 
-// private
+static inline char* ds_string_get_data(ds_String* string) {
+    return ds_is_heap(string) ? string->heap_data : string->stack_data;
+}
 
+// private
 
 
 #ifdef __cplusplus
@@ -742,6 +776,323 @@ ds_String* ds_split(ds_String* string, char seperator) {
     return NULL;
 }
 
-#endif
+ds_StringView ds_string_view_from_cstr(const char *str) {
+    ds_StringView view = {0};
 
+    if (!str) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return view;
+    }
+
+    view.data = str;
+    view.length = strlen(str);
+
+    return view;
+}
+
+ds_StringView ds_string_view_from_string(ds_String *string) {
+    ds_StringView view = {0};
+
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return view;
+    }
+
+    view.data = ds_string_get_data(string);
+    view.length = string->length;
+
+    return view;
+}
+
+ds_StringView ds_string_view_from_buffer(const char *data, uint32_t length) {
+    ds_StringView view = {0};
+
+    if (!data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input buffer is NULL");
+        return view;
+    }
+
+    view.data = data;
+    view.length = length;
+
+    return view;
+}
+
+ds_StringView ds_string_view_from_substr(const ds_StringView *view, uint32_t start, uint32_t length) {
+    ds_StringView lview = {0};
+
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return lview;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return lview;
+    }
+
+    if (start >= view->length) {
+        DS_SET_ERROR(DS_OUT_OF_BOUNDS, "Start Index %u >= string length", start);
+        return lview;
+    }
+
+    uint32_t available_length = view->length - start;
+    uint32_t actual_length = (length > available_length) ? available_length : length;
+
+    lview.data = view->data + start;
+    lview.length = actual_length;
+
+    return lview;
+}
+
+ds_StringView ds_string_view_from_substr_to_end(const ds_StringView *view, uint32_t start) {
+    ds_StringView lview = {0};
+
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return lview;
+    }
+
+    if (start >= view->length) {
+        DS_SET_ERROR(DS_OUT_OF_BOUNDS, "Start Index %u >= string length", start);
+        return lview;
+    }
+
+    lview.data = view->data + start;
+    lview.length = view->length - start;
+
+    return lview;
+}
+
+ds_StringView ds_string_view_from_string_substr(ds_String *string, uint32_t start, uint32_t length) {
+    ds_StringView view;
+
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return view;
+    }
+
+    if (start >= string->length) {
+        DS_SET_ERROR(DS_OUT_OF_BOUNDS, "Start Index %u >= string length", start);
+        return view;
+    }
+
+    uint32_t available_length = string->length - start;
+    uint32_t actual_length = (length > available_length) ? available_length : length;
+
+    view.data = ds_string_get_data(string) + start;
+    view.length = actual_length;
+
+    return view;
+}
+
+ds_StringView ds_string_view_from_string_substr_to_end(ds_String *string, uint32_t start) {
+    ds_StringView view = {0};
+
+    if (!string) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return view;
+    }
+
+    if (start >= string->length) {
+        DS_SET_ERROR(DS_OUT_OF_BOUNDS, "Start Index %u >= string length", start);
+        return view;
+    }
+
+    view.data = ds_string_get_data(string) + start;
+    view.length = string->length - start;
+
+    return view;
+
+}
+
+bool ds_string_view_equal(const ds_StringView *view1, const ds_StringView *view2) {
+    if (!view1 || !view2) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return false;
+    }
+
+    if (!view1->data || !view2->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return false;
+    }
+
+    if (view1->length != view2->length) return false;
+    return memcmp(view1->data, view2->data, view1->length) == 0;
+}
+
+bool ds_string_view_equal_cstr(const ds_StringView *view, const char *str) {
+    if (!view || !str) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return false;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return false;
+    }
+
+    if (view->length != strlen(str)) return false;
+    return memcmp(view->data, str, view->length) == 0;
+}
+
+bool ds_string_view_is_empty(const ds_StringView *view) {
+    return (!view || view->length) == 0;
+}
+
+int32_t ds_string_view_find_char(const ds_StringView *view, char c) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return -1;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return false;
+    }
+
+    for (size_t i = 0; i < view->length; i++) {
+        if (view->data[i] == c) return (int32_t)i;
+    }
+
+    return -1;
+}
+
+int32_t ds_string_view_find_substr(const ds_StringView *view, const ds_StringView *substr) {
+    if (!view || !substr || !view->data || !substr->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or substr is NULL or has no data");
+        return -1;
+    }
+
+    if (substr->length == 0) {
+        return 0;
+    }
+
+    if (substr->length > view->length) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < view->length - substr->length; i++) {
+        if (memcmp(view->data + i, substr->data, substr->length) == 0) {
+            return (int32_t)i;
+        }
+    }
+
+    return -1;
+}
+
+bool ds_string_view_starts_with(const ds_StringView *view, const ds_StringView *prefix) {
+    if (!view || !prefix || !view->data || !prefix->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or prefix is NULL or has no data");
+        return false;
+    }
+
+    if (prefix->length == 0) return true;
+    if (prefix->length > view->length) return false;
+
+    if (memcmp(view->data, prefix->data, prefix->length) == 0) return true;
+
+    return false;
+}
+
+bool ds_string_view_ends_with(const ds_StringView *view, const ds_StringView *suffix) {
+    if (!view || !suffix || !view->data || !suffix->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "StringView or suffix is NULL or has no data");
+        return false;
+    }
+
+    if (suffix->length == 0) return true;
+    if (suffix->length > view->length) return false;
+
+    if (memcmp(view->data + view->length - suffix->length, suffix->data, suffix->length) == 0) return true;
+
+    return false;
+
+}
+
+ds_String* ds_string_from_view(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    ds_String* string = ds_init_string(view->data);
+    return string;
+}
+
+ds_StringView ds_string_view_trim_whitespace(const ds_StringView *view) {
+    ds_StringView result = {0};
+
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return result;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return result;
+    }
+
+    char data[view->length];
+    uint32_t index = 0;
+
+    for (size_t i = 0; i < view->length; i++) {
+        if (view->data[i] != ' ') {
+            data[index++] = view->data[i];
+        }
+    }
+
+    result = ds_string_view_from_buffer(data, index);
+    
+    return result;
+}
+
+void ds_string_view_print(const ds_StringView *view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return;
+    }
+
+    printf("%s\n", view->data);
+}
+
+const char* ds_string_view_get_data(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    return view->data;
+} 
+
+uint32_t ds_string_view_get_length(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    return view->length;
+}
+
+#endif
 

@@ -4,6 +4,7 @@
 A simple dynamic string libary for c 
 
 # Notes
+The string_view functions havent been tested yet!
 This libary is under developement right now so some functions may not work or havent been implemented
 
 # Example 
