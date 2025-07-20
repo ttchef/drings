@@ -759,3 +759,88 @@ bool ds_string_view_ends_with(const ds_StringView *view, const ds_StringView *su
     return false;
 
 }
+
+ds_String* ds_string_from_view(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    ds_String* string = ds_init_string(view->data);
+    return string;
+}
+
+ds_StringView ds_string_view_trim_whitespace(const ds_StringView *view) {
+    ds_StringView result = {0};
+
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return result;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return result;
+    }
+
+    char data[view->length];
+    uint32_t index = 0;
+
+    for (size_t i = 0; i < view->length; i++) {
+        if (view->data[i] != ' ') {
+            data[index++] = view->data[i];
+        }
+    }
+
+    result = ds_string_view_from_buffer(data, index);
+    
+    return result;
+}
+
+void ds_string_view_print(const ds_StringView *view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return;
+    }
+
+    printf("%s\n", view->data);
+}
+
+const char* ds_string_view_get_data(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    return view->data;
+} 
+
+uint32_t ds_string_view_get_length(const ds_StringView* view) {
+    if (!view) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
+        return NULL;
+    }
+
+    if (!view->data) {
+        DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
+        return NULL;
+    }
+
+    return view->length;
+}
+

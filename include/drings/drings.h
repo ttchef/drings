@@ -117,7 +117,9 @@ bool            ds_string_view_ends_with(const ds_StringView* view, const ds_Str
 ds_String*      ds_string_from_view(const ds_StringView* view);
 
 ds_StringView   ds_string_view_trim_whitespace(const ds_StringView* view);
-void            ds_string_view_print(const ds_StringView* view, const char* label);
+void            ds_string_view_print(const ds_StringView* view);
+const char*     ds_string_view_get_data(const ds_StringView* view);
+uint32_t        ds_string_view_get_length(const ds_StringView* view);
 
 int32_t         ds_string_view_to_int(const ds_StringView* view, bool* success);
 double          ds_string_view_to_double(const ds_StringView* view, bool* success);
