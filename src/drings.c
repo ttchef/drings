@@ -540,7 +540,7 @@ ds_StringView ds_string_view_from_cstr(const char *str) {
     return view;
 }
 
-ds_StringView ds_string_view_from_string(const ds_String *string) {
+ds_StringView ds_string_view_from_string(ds_String *string) {
     ds_StringView view = {0};
 
     if (!string) {
@@ -833,12 +833,12 @@ const char* ds_string_view_get_data(const ds_StringView* view) {
 uint32_t ds_string_view_get_length(const ds_StringView* view) {
     if (!view) {
         DS_SET_ERROR(DS_INVALID_INPUT, "Input string is NULL");
-        return NULL;
+        return -1;
     }
 
     if (!view->data) {
         DS_SET_ERROR(DS_INVALID_INPUT, "Input string data is NULL");
-        return NULL;
+        return -1;
     }
 
     return view->length;
